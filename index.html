@@ -1664,13 +1664,14 @@
 
 })();
 </script>
-
+<script>
+  // Kick off initialization so DevTools shows any errors early
+  if(typeof initFirebase === 'function'){
+    initFirebase().then(function(){ console.log('initFirebase: ready'); }).catch(function(err){ console.warn('initFirebase: failed', err); });
+  }
 </script>
 
-<!-- Firebase SDKs and initialization (add your project config below) -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<!-- Firebase: dynamic loader, initialization and robust save (uses compat SDKs) -->
 <script>
   // Replace these values with your Firebase project's config (from Firebase Console)
   var firebaseConfig = {
@@ -1682,42 +1683,100 @@
     appId: "1:170840922929:web:b63378113f1a16239fae10"
   };
 
-  if(window.firebase){
-    try{
-      if(!firebase.apps || firebase.apps.length===0) firebase.initializeApp(firebaseConfig);
-      console.log('Firebase initialized — apps:', (firebase.apps && firebase.apps.length) || 0, 'projectId:', firebaseConfig.projectId);
-    }catch(e){ console.warn('Firebase init error', e); toast('Firebase init error: '+(e.message||e)); }
-  } else {
-    console.warn('Firebase SDK not available.'); toast('Firebase SDK not loaded.');
+  // Compat SDK URLs (kept in a list so we can dynamically load if needed)
+  var FB_SDK_URLS = [
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
+    'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js'
+  ];
+
+  var db = null;
+  var _fbInitPromise = null;
+
+  function loadScript(url){
+    return new Promise(function(resolve, reject){
+      var s = document.createElement('script');
+      s.src = url;
+      s.onload = function(){ console.log('Loaded script', url); resolve(); };
+      s.onerror = function(e){ console.error('Script load error', url, e); reject(new Error('Failed to load '+url)); };
+      document.head.appendChild(s);
+    });
   }
 
-  var db = (window.firebase && firebase.firestore) ? firebase.firestore() : null;
+  function ensureFirebaseSdk(){
+    if(window.firebase && window.firebase.apps!==undefined) return Promise.resolve();
+    // Try loading SDKs in order
+    return FB_SDK_URLS.reduce(function(p, url){
+      return p.then(function(){
+        // if firebase appeared while loading previous script, skip remaining
+        if(window.firebase && window.firebase.apps!==undefined) return Promise.resolve();
+        return loadScript(url);
+      });
+    }, Promise.resolve());
+  }
 
+  function initFirebase(){
+    if(_fbInitPromise) return _fbInitPromise;
+    _fbInitPromise = new Promise(function(resolve, reject){
+      ensureFirebaseSdk().then(function(){
+        if(!window.firebase){
+          console.warn('Firebase SDK did not become available after loading.');
+          toast('Firebase SDK missing — check network or blocked scripts.');
+          return reject(new Error('Firebase SDK not available'));
+        }
+        try{
+          if(!firebase.apps || firebase.apps.length===0) firebase.initializeApp(firebaseConfig);
+          console.log('Firebase initialized — apps:', (firebase.apps && firebase.apps.length) || 0, 'projectId:', firebaseConfig.projectId);
+          try{ db = firebase.firestore(); console.log('Firestore instance ready.', db ? true : false); }catch(e){ console.warn('Firestore init failed', e); }
+          resolve({firebase:window.firebase, db:db});
+        }catch(e){
+          console.warn('Firebase init error', e);
+          toast('Firebase init error: '+(e && e.message ? e.message : e));
+          reject(e);
+        }
+      }).catch(function(err){
+        console.error('Failed to load Firebase SDKs', err);
+        toast('Failed to load Firebase SDKs.');
+        reject(err);
+      });
+    });
+    return _fbInitPromise;
+  }
+
+  // Async save that ensures Firebase is initialized first and returns a Promise<boolean>
   function saveInvoiceToFirebase(){
-    if(!db){ toast('Firebase not configured.'); return Promise.resolve(null); }
-    try{
-      var payload = JSON.parse(JSON.stringify(invoice));
-      var docId = payload.invNo || db.collection('invoices').doc().id;
-      return db.collection('invoices').doc(docId).set(payload)
-        .then(function(){ toast('Saved to Firebase.'); return true; })
-        .catch(function(err){
-          console.error('Firestore write error', err);
-          if(err && err.code === 'permission-denied'){
-            toast('Firebase write denied: check Firestore rules (for testing you can allow open writes).');
-          } else {
-            toast('Firebase save failed: '+(err.message||err));
-          }
-          return false;
-        });
-    }catch(err){ console.error(err); toast('Prepare failed: '+(err.message||err)); return Promise.resolve(false); }
+    return initFirebase().then(function(){
+      if(!db){ toast('Firestore not available. Check console for details.'); return false; }
+      try{
+        var payload = JSON.parse(JSON.stringify(invoice));
+        var docId = payload.invNo || db.collection('invoices').doc().id;
+        console.log('Attempting Firestore write for', docId);
+        return db.collection('invoices').doc(docId).set(payload)
+          .then(function(){ console.log('Firestore write OK', docId); toast('Saved to Firebase.'); return true; })
+          .catch(function(err){
+            console.error('Firestore write error', err);
+            if(err && err.code === 'permission-denied'){
+              toast('Firebase write denied: check Firestore rules or enable Authentication.');
+            } else if(err && err.message){
+              toast('Firebase save failed: '+err.message);
+            } else {
+              toast('Firebase save failed. See console for details.');
+            }
+            return false;
+          });
+      }catch(err){ console.error('Prepare payload failed', err); toast('Prepare failed: '+(err && err.message?err.message:err)); return Promise.resolve(false); }
+    }).catch(function(err){
+      console.error('Firebase init failed — cannot save', err);
+      return false;
+    });
   }
 
-  // Try cloud save shortly after local save/lock
+  // Hook: after a successful local Save action try to push to cloud (non-blocking)
   (function(){
     var saveBtn = document.getElementById('btnSave');
     if(!saveBtn) return;
     saveBtn.addEventListener('click', function(){
-      setTimeout(function(){ if(window.firebase && db && invoice && invoice.invNo) saveInvoiceToFirebase(); }, 700);
+      setTimeout(function(){ if(invoice && invoice.invNo) saveInvoiceToFirebase(); }, 700);
     });
   })();
 </script>
