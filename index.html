@@ -1677,16 +1677,18 @@
     apiKey: "AIzaSyDZA3JryfRj6eZfeQQrzq4W2DxzqNJpJBc",
     authDomain: "fgt-proforma.firebaseapp.com",
     projectId: "fgt-proforma",
-    storageBucket: "fgt-proforma.firebasestorage.app",
+    storageBucket: "fgt-proforma.appspot.com",
     messagingSenderId: "170840922929",
     appId: "1:170840922929:web:b63378113f1a16239fae10"
   };
 
-  if(window.firebase && firebase.initializeApp){
-    try{ firebase.initializeApp(firebaseConfig); }
-    catch(e){ console.warn('Firebase init error', e); }
+  if(window.firebase){
+    try{
+      if(!firebase.apps || firebase.apps.length===0) firebase.initializeApp(firebaseConfig);
+      console.log('Firebase initialized — apps:', (firebase.apps && firebase.apps.length) || 0, 'projectId:', firebaseConfig.projectId);
+    }catch(e){ console.warn('Firebase init error', e); toast('Firebase init error: '+(e.message||e)); }
   } else {
-    console.warn('Firebase SDK not available.');
+    console.warn('Firebase SDK not available.'); toast('Firebase SDK not loaded.');
   }
 
   var db = (window.firebase && firebase.firestore) ? firebase.firestore() : null;
@@ -1698,7 +1700,15 @@
       var docId = payload.invNo || db.collection('invoices').doc().id;
       return db.collection('invoices').doc(docId).set(payload)
         .then(function(){ toast('Saved to Firebase.'); return true; })
-        .catch(function(err){ console.error(err); toast('Firebase save failed: '+(err.message||err)); return false; });
+        .catch(function(err){
+          console.error('Firestore write error', err);
+          if(err && err.code === 'permission-denied'){
+            toast('Firebase write denied: check Firestore rules (for testing you can allow open writes).');
+          } else {
+            toast('Firebase save failed: '+(err.message||err));
+          }
+          return false;
+        });
     }catch(err){ console.error(err); toast('Prepare failed: '+(err.message||err)); return Promise.resolve(false); }
   }
 
