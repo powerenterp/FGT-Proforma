@@ -205,14 +205,16 @@
   table.items tbody tr:hover{background:#fafcfb;}
   table.items td.num{text-align:right;font-variant-numeric:tabular-nums;}
   table.items td.center{text-align:center;}
-  .col-no{width:34px;text-align:center;color:var(--ink-soft);}
-  .col-qty{width:64px;}
-  .col-unit{width:92px;}
-  .col-price{width:110px;}
-  .col-supplier{width:120px;}
-  .col-purchase{width:110px;}
-  .col-total{width:120px;}
-  .col-del{width:34px;}
+  .col-no{width:30px;text-align:center;color:var(--ink-soft);}
+  .col-item{width:26%;}
+  .col-spec{width:16%;}
+  .col-qty{width:56px;}
+  .col-unit{width:82px;}
+  .col-price{width:96px;}
+  .col-supplier{width:110px;}
+  .col-purchase{width:96px;}
+  .col-total{width:104px;}
+  .col-del{width:30px;}
 
   /* purchase price is internal-only: hidden unless the user toggles it on,
      and always forced hidden on print (see @media print below) */
@@ -422,17 +424,98 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  /* ============ LOGIN SCREEN ============ */
+  .login-overlay{
+    position:fixed;inset:0;z-index:400;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,var(--ink) 0%,#2a3648 100%);
+    padding:20px;
+  }
+  .login-overlay.hidden{display:none;}
+  .login-card{
+    background:var(--paper);width:100%;max-width:380px;
+    border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.35);
+    padding:34px 30px;
+  }
+  .login-brand{
+    font-family:var(--font-display);font-size:20px;
+    display:flex;align-items:center;gap:8px;margin-bottom:8px;color:var(--ink);
+  }
+  .login-brand .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block;}
+  .login-sub{font-size:12.5px;color:var(--ink-soft);line-height:1.55;margin-bottom:22px;}
+  #loginForm .f-group label{font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-bottom:5px;display:block;}
+  #loginForm input{
+    width:100%;border:1px solid var(--line);border-radius:var(--radius);
+    padding:10px 12px;font-size:14px;background:#fff;
+  }
+  #loginForm input:focus{outline:none;border-color:var(--accent);}
+  .login-submit{width:100%;margin-top:18px;padding:11px;font-size:13px;}
+  .login-link{
+    display:block;width:100%;text-align:center;margin-top:14px;
+    border:none;background:none;color:var(--accent);font-size:12px;font-weight:600;
+  }
+  .login-link:hover{text-decoration:underline;}
+  .login-error{
+    margin-top:14px;background:var(--danger-soft);color:var(--danger);
+    border-radius:var(--radius);padding:9px 11px;font-size:12px;line-height:1.5;
+  }
+  .login-status{margin-top:14px;text-align:center;font-size:12px;color:var(--ink-soft);}
+
+  .sync-pill{white-space:nowrap;}
+  .sync-pill.syncing b{color:var(--gold);}
+  .sync-pill.synced b{color:var(--accent);}
+  .sync-pill.offline b{color:var(--danger);}
+
   /* ============ RESPONSIVE ============ */
+  .table-scroll{width:100%;-webkit-overflow-scrolling:touch;}
+
   @media (max-width:720px){
-    .sheet{padding:24px 18px;}
-    .inv-header{flex-direction:column;}
+    body{font-size:15px;}
+    .workspace{padding:14px 6px 70px;}
+    .sheet{padding:18px 14px;min-height:0;}
+    .inv-header{flex-direction:column;gap:14px;}
     .inv-title-block{text-align:left;}
-    .meta-strip{flex-direction:column;}
+    .inv-title{font-size:21px;}
+    .meta-strip{flex-direction:column;gap:16px;}
     .form-grid{grid-template-columns:1fr;}
-    .topbar{justify-content:center;}
-    .topbar .brand{margin:0 0 6px;width:100%;justify-content:center;}
-    table.items{font-size:11px;}
-    .col-unit,.col-qty{width:50px;}
+
+    .topbar{justify-content:center;padding:8px 10px;gap:6px;}
+    .topbar .brand{margin:0 0 6px;width:100%;justify-content:center;font-size:16px;}
+    .tb-btn{padding:9px 12px;font-size:12px;flex:1 1 auto;min-width:0;}
+
+    .toolbar-row{gap:6px;}
+    .mode-pill{font-size:10px;padding:5px 8px;}
+
+    /* items table: keep it usable by letting it scroll sideways instead
+       of squeezing every column unreadably small */
+    .table-scroll{overflow-x:auto;margin:0 -14px;padding:0 14px;}
+    table.items{font-size:11.5px;min-width:640px;}
+    table.items tbody td, table.items thead th{padding:8px 6px;}
+    .cell-input{padding:6px 4px;font-size:13px;} /* >=13px avoids iOS input zoom */
+
+    .totals-box{width:100%;max-width:320px;}
+    .sign-block{flex-direction:column;gap:22px;}
+    .sign-col{min-width:0;}
+
+    /* modals */
+    .modal-overlay{padding:0;align-items:stretch;}
+    .modal{max-width:100%;min-height:100%;border-radius:0;}
+    .modal-body{max-height:none;}
+    .tabs{overflow-x:auto;flex-wrap:nowrap;}
+    .tab-btn{white-space:nowrap;padding:11px 12px;}
+
+    /* comfortable tap targets */
+    button, .cell-input, select, input, textarea{min-height:38px;}
+    .row-del-btn{min-height:28px;}
+    table.items .cell-input{min-height:30px;}
+
+    /* login card */
+    .login-card{padding:28px 22px;max-width:100%;}
+  }
+
+  @media (max-width:420px){
+    .tb-btn{font-size:11px;padding:8px 9px;}
+    .inv-title{font-size:19px;}
   }
 
   /* ============ PRINT ============ */
@@ -442,7 +525,7 @@
     /* force background colors (table header, watermark, etc.) to actually print */
     *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; color-adjust:exact !important; }
 
-    .topbar,.toolbar-row,.editor-only,.modal-overlay,.toast,.add-item-row,.row-del-btn,.col-del{
+    .topbar,.toolbar-row,.editor-only,.modal-overlay,.toast,.add-item-row,.row-del-btn,.col-del,.login-overlay{
       display:none !important;
     }
     .purchase-col{display:none !important;}
@@ -471,8 +554,33 @@
 </head>
 <body class="mode-edit">
 
+<!-- ============ LOGIN SCREEN ============ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-brand"><span class="dot"></span>Proforma Studio</div>
+    <div class="login-sub">Sign in to continue. Your data is synced to the cloud, so it's the same on every device.</div>
+
+    <form id="loginForm" autocomplete="on">
+      <div class="f-group">
+        <label for="loginUsername">Username</label>
+        <input type="text" id="loginUsername" autocomplete="username" required placeholder="Username" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="f-group" style="margin-top:10px;">
+        <label for="loginPassword">Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required placeholder="••••••••">
+      </div>
+      <div class="login-error" id="loginError" style="display:none;"></div>
+      <button type="submit" class="btn primary login-submit" id="btnLoginSubmit">Sign In</button>
+    </form>
+    <div class="login-status" id="loginStatus"></div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+
 <div class="topbar">
   <div class="brand"><span class="dot"></span>Proforma Studio</div>
+  <span class="mode-pill sync-pill" id="syncStatus" title="Cloud sync status">☁ —</span>
   <button class="tb-btn" id="btnNew">New Invoice</button>
   <button class="tb-btn" id="btnSave">Save Invoice</button>
   <button class="tb-btn" id="btnHistory">Invoice History</button>
@@ -480,6 +588,7 @@
   <button class="tb-btn" id="btnSettings">Settings</button>
   <button class="tb-btn" id="btnToggleMode">Preview</button>
   <button class="tb-btn gold" id="btnPrint">Print / Save PDF</button>
+  <button class="tb-btn" id="btnLogout" title="Sign out">Sign Out</button>
 </div>
 
 <div class="workspace">
@@ -537,23 +646,25 @@
       </div>
 
       <!-- ITEMS TABLE -->
+      <div class="table-scroll">
       <table class="items">
         <thead>
           <tr>
-            <th class="num" style="text-align:center;" data-th="no">No</th>
-            <th data-th="item">Item</th>
-            <th data-th="spec">Specification</th>
-            <th data-th="unit">Unit</th>
-            <th class="num" data-th="qty">QTY</th>
-            <th class="num" data-th="price">Unit Price</th>
+            <th class="num col-no" style="text-align:center;" data-th="no">No</th>
+            <th class="col-item" data-th="item">Item</th>
+            <th class="col-spec" data-th="spec">Specification</th>
+            <th class="col-unit" data-th="unit">Unit</th>
+            <th class="num col-qty" data-th="qty">QTY</th>
+            <th class="num col-price" data-th="price">Unit Price</th>
             <th class="purchase-col col-supplier" data-th="supplier">Supplier</th>
             <th class="num purchase-col col-purchase" data-th="purchase">Purchase Price</th>
-            <th class="num" data-th="total">Total Price</th>
+            <th class="num col-total" data-th="total">Total Price</th>
             <th class="editor-only col-del"></th>
           </tr>
         </thead>
         <tbody id="itemsBody"></tbody>
       </table>
+      </div>
       <div class="add-item-row editor-only">
         <button class="add-item-btn" id="btnAddItem">+ Add Item</button>
       </div>
@@ -746,7 +857,13 @@
   </div>
 </div>
 
+</div><!-- /#appRoot -->
+
 <div class="toast" id="toast"></div>
+
+<!-- Supabase JS client — loaded up front so the app script below can use
+     `supabase` synchronously for cloud sync. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 
 <script>
 (function(){
@@ -1069,8 +1186,8 @@
       var total = (parseFloat(row.qty)||0) * (parseFloat(row.price)||0);
       tr.innerHTML =
         '<td class="col-no">'+(idx+1)+'</td>'+
-        '<td><input class="cell-input" data-field="item" data-idx="'+idx+'" value="'+esc(row.item)+'" placeholder="Item name"'+dis+'></td>'+
-        '<td><input class="cell-input" data-field="spec" data-idx="'+idx+'" value="'+esc(row.spec)+'" placeholder="Specification"'+dis+'></td>'+
+        '<td class="col-item"><input class="cell-input" data-field="item" data-idx="'+idx+'" value="'+esc(row.item)+'" placeholder="Item name"'+dis+'></td>'+
+        '<td class="col-spec"><input class="cell-input" data-field="spec" data-idx="'+idx+'" value="'+esc(row.spec)+'" placeholder="Specification"'+dis+'></td>'+
         '<td class="col-unit">'+
           '<select class="cell-input center" data-field="unit" data-idx="'+idx+'"'+dis+'>'+unitOptionsHtml(row.unit)+'</select>'+
           '<input class="cell-input center" data-field="unitCustom" data-idx="'+idx+'" value="'+esc(isCustomUnit(row.unit)?row.unit:'')+'" placeholder="Custom unit" style="margin-top:2px;'+(isCustomUnit(row.unit)?'':'display:none;')+'"'+dis+'>'+
@@ -1286,6 +1403,7 @@
     clearTimeout(autosaveTimer);
     autosaveTimer=setTimeout(function(){
       saveJSON(LS_DRAFT, invoice);
+      pushToCloud();
     }, 250);
   }
 
@@ -1343,6 +1461,7 @@
     else{ history.push(record); }
     if(saveJSON(LS_HISTORY, history)){
       renderAll();
+      pushToCloud(true);
       toast('Invoice saved and locked — it can no longer be edited.');
     }
   });
@@ -1364,13 +1483,13 @@
       saveJSON(LS_HISTORY, history);
       toast('Saved local copy before printing.');
 
-      // Attempt cloud save if Firebase is configured; wait up to 1.5s for it, then print
+      // Attempt cloud save if Supabase is configured; wait up to 1.5s for it, then print
       try{
-        var fbPromise = (typeof saveInvoiceToFirebase === 'function') ? saveInvoiceToFirebase() : Promise.resolve(null);
+        if(db){ pushToCloud(true); }
         var timeout = new Promise(function(res){ setTimeout(res, 1500); });
-        Promise.race([fbPromise, timeout]).finally(function(){ window.print(); });
+        Promise.race([Promise.resolve(null), timeout]).finally(function(){ window.print(); });
         return;
-      }catch(e){ console.error('Firebase save attempt failed', e); }
+      }catch(e){ console.error('Cloud save attempt failed', e); }
 
     }catch(err){ console.error('Auto-save before print failed', err); }
     window.print();
@@ -1514,6 +1633,7 @@
     enforceLockedCompany(settings);
     saveJSON(LS_SETTINGS, settings);
     renderAll();
+    pushToCloud(true);
     closeModal('settingsOverlay');
     toast('Settings saved.');
   });
@@ -1525,6 +1645,7 @@
       saveJSON(LS_SETTINGS, settings);
       populateSettingsForm();
       renderAll();
+      pushToCloud(true);
       toast('Settings reset to default.');
     }
   });
@@ -1601,6 +1722,7 @@
         if(confirm('Are you sure you want to delete invoice '+no+'?')){
           history=history.filter(function(h){return h.invNo!==no;});
           saveJSON(LS_HISTORY, history);
+          pushToCloud(true);
           renderHistoryTable($('histSearch').value);
           toast('Invoice deleted.');
         }
@@ -1609,7 +1731,7 @@
     wrap.querySelectorAll('.status-select').forEach(function(sel){
       sel.addEventListener('change', function(){
         var rec=history.find(function(h){return h.invNo===sel.getAttribute('data-invno');});
-        if(rec){ rec.status=sel.value; saveJSON(LS_HISTORY, history); }
+        if(rec){ rec.status=sel.value; saveJSON(LS_HISTORY, history); pushToCloud(true); }
       });
     });
   }
@@ -1647,6 +1769,7 @@
         saveJSON(LS_HISTORY, history);
         renderAll();
         renderHistoryTable();
+        pushToCloud(true);
         toast('Data imported successfully.');
       }catch(err){
         console.error(err);
@@ -1662,123 +1785,237 @@
   ============================================================ */
   renderAll();
 
-})();
-</script>
-<script>
-  // Kick off initialization so DevTools shows any errors early
-  if(typeof initFirebase === 'function'){
-    initFirebase().then(function(){ console.log('initFirebase: ready'); }).catch(function(err){ console.warn('initFirebase: failed', err); });
-  }
-</script>
+  /* ============================================================
+     CLOUD SYNC (Supabase) + LOCAL LOGIN
+     The login screen itself is entirely self-contained — it checks
+     the username/password against fixed values below and never
+     calls Supabase. Once logged in, the app reads/writes a single
+     shared row in the `company_data` table — every logged-in
+     device ends up looking at the same data. No Supabase Auth is
+     used; access is controlled purely by the RLS policy on the
+     table (see setup SQL) and by the local login gate below.
+  ============================================================ */
+  // TODO: fill these in from Supabase → Settings → API
+  var SUPABASE_URL = "https://nuvdatyskavagrlnqojn.supabase.co";
+  var SUPABASE_ANON_KEY = "sb_publishable_mrsg7GxSPuW8Qk4sgx7TUw_J6EkCDZD";
 
-<!-- Firebase: dynamic loader, initialization and robust save (uses compat SDKs) -->
-<script>
-  // Replace these values with your Firebase project's config (from Firebase Console)
-  var firebaseConfig = {
-    apiKey: "AIzaSyDZA3JryfRj6eZfeQQrzq4W2DxzqNJpJBc",
-    authDomain: "fgt-proforma.firebaseapp.com",
-    projectId: "fgt-proforma",
-    storageBucket: "fgt-proforma.appspot.com",
-    messagingSenderId: "170840922929",
-    appId: "1:170840922929:web:b63378113f1a16239fae10"
-  };
+  var db = null; // the Supabase client
+  var CLOUD_TABLE = 'company_data';
+  var CLOUD_ROW_ID = 'shared'; // one shared row for the whole company/team
 
-  // Compat SDK URLs (kept in a list so we can dynamically load if needed)
-  var FB_SDK_URLS = [
-    'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
-    'https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js',
-    'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js'
-  ];
+  // Login credentials, checked locally on this page — no network call.
+  var LOGIN_USERNAME = 'fgtproforma';
+  var LOGIN_PASSWORD = '0200';
+  var LS_LOGGEDIN = 'proformaStudio_loggedIn';
 
-  var db = null;
-  var _fbInitPromise = null;
+  var cloudUnsub = null;
+  var cloudPushTimer = null;
+  var suppressCloudPush = false; // true while applying data that just arrived from the cloud
 
-  function loadScript(url){
-    return new Promise(function(resolve, reject){
-      var s = document.createElement('script');
-      s.src = url;
-      s.onload = function(){ console.log('Loaded script', url); resolve(); };
-      s.onerror = function(e){ console.error('Script load error', url, e); reject(new Error('Failed to load '+url)); };
-      document.head.appendChild(s);
-    });
-  }
-
-  function ensureFirebaseSdk(){
-    if(window.firebase && window.firebase.apps!==undefined) return Promise.resolve();
-    // Try loading SDKs in order
-    return FB_SDK_URLS.reduce(function(p, url){
-      return p.then(function(){
-        // if firebase appeared while loading previous script, skip remaining
-        if(window.firebase && window.firebase.apps!==undefined) return Promise.resolve();
-        return loadScript(url);
-      });
-    }, Promise.resolve());
-  }
-
-  function initFirebase(){
-    if(_fbInitPromise) return _fbInitPromise;
-    _fbInitPromise = new Promise(function(resolve, reject){
-      ensureFirebaseSdk().then(function(){
-        if(!window.firebase){
-          console.warn('Firebase SDK did not become available after loading.');
-          toast('Firebase SDK missing — check network or blocked scripts.');
-          return reject(new Error('Firebase SDK not available'));
-        }
-        try{
-          if(!firebase.apps || firebase.apps.length===0) firebase.initializeApp(firebaseConfig);
-          console.log('Firebase initialized — apps:', (firebase.apps && firebase.apps.length) || 0, 'projectId:', firebaseConfig.projectId);
-          try{ db = firebase.firestore(); console.log('Firestore instance ready.', db ? true : false); }catch(e){ console.warn('Firestore init failed', e); }
-          resolve({firebase:window.firebase, db:db});
-        }catch(e){
-          console.warn('Firebase init error', e);
-          toast('Firebase init error: '+(e && e.message ? e.message : e));
-          reject(e);
-        }
-      }).catch(function(err){
-        console.error('Failed to load Firebase SDKs', err);
-        toast('Failed to load Firebase SDKs.');
-        reject(err);
-      });
-    });
-    return _fbInitPromise;
-  }
-
-  // Async save that ensures Firebase is initialized first and returns a Promise<boolean>
-  function saveInvoiceToFirebase(){
-    return initFirebase().then(function(){
-      if(!db){ toast('Firestore not available. Check console for details.'); return false; }
-      try{
-        var payload = JSON.parse(JSON.stringify(invoice));
-        var docId = payload.invNo || db.collection('invoices').doc().id;
-        console.log('Attempting Firestore write for', docId);
-        return db.collection('invoices').doc(docId).set(payload)
-          .then(function(){ console.log('Firestore write OK', docId); toast('Saved to Firebase.'); return true; })
-          .catch(function(err){
-            console.error('Firestore write error', err);
-            if(err && err.code === 'permission-denied'){
-              toast('Firebase write denied: check Firestore rules or enable Authentication.');
-            } else if(err && err.message){
-              toast('Firebase save failed: '+err.message);
-            } else {
-              toast('Firebase save failed. See console for details.');
-            }
-            return false;
-          });
-      }catch(err){ console.error('Prepare payload failed', err); toast('Prepare failed: '+(err && err.message?err.message:err)); return Promise.resolve(false); }
-    }).catch(function(err){
-      console.error('Firebase init failed — cannot save', err);
-      return false;
-    });
-  }
-
-  // Hook: after a successful local Save action try to push to cloud (non-blocking)
-  (function(){
-    var saveBtn = document.getElementById('btnSave');
-    if(!saveBtn) return;
-    saveBtn.addEventListener('click', function(){
-      setTimeout(function(){ if(invoice && invoice.invNo) saveInvoiceToFirebase(); }, 700);
-    });
+  var deviceId = (function(){
+    var k = 'proformaStudio_deviceId';
+    var v = null;
+    try{ v = localStorage.getItem(k); }catch(e){}
+    if(!v){
+      v = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2);
+      try{ localStorage.setItem(k, v); }catch(e){}
+    }
+    return v;
   })();
+
+  function setSyncStatus(state, text, detail){
+    var el = $('syncStatus');
+    if(!el) return;
+    el.className = 'mode-pill sync-pill ' + state;
+    el.innerHTML = '☁ <b>' + esc(text) + '</b>';
+    // Surface the real Supabase error (code + message) as a tooltip so the
+    // actual cause of a sync failure (rules, auth config, etc.) is visible
+    // instead of just a generic "Offline" label.
+    el.title = detail ? ('Cloud sync status: ' + detail) : 'Cloud sync status';
+  }
+
+  function initSupabaseApp(){
+    if(typeof supabase === 'undefined'){
+      console.warn('Supabase SDK not loaded.');
+      return false;
+    }
+    if(SUPABASE_URL.indexOf('YOUR-PROJECT-REF') !== -1){
+      console.warn('Supabase not configured yet — fill in SUPABASE_URL / SUPABASE_ANON_KEY.');
+      return false;
+    }
+    try{
+      db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      return true;
+    }catch(e){
+      console.error('Supabase init failed', e);
+      return false;
+    }
+  }
+
+  // Apply data that came from the cloud into local state without
+  // re-triggering a write straight back to the cloud.
+  function applyCloudSnapshot(data){
+    suppressCloudPush = true;
+    try{
+      if(data.settings){
+        settings = Object.assign(defaultSettings(), data.settings);
+        settings.company = Object.assign(defaultSettings().company, data.settings.company||{});
+        settings.appearance = Object.assign(defaultSettings().appearance, data.settings.appearance||{});
+        settings.labels = Object.assign(defaultSettings().labels, data.settings.labels||{});
+        enforceLockedCompany(settings);
+        saveJSON(LS_SETTINGS, settings);
+      }
+      if(Array.isArray(data.history)){
+        history = data.history;
+        saveJSON(LS_HISTORY, history);
+      }
+      if(data.invoice && !isLocked()){
+        invoice = data.invoice;
+        saveJSON(LS_DRAFT, invoice);
+      }
+      renderAll();
+      renderHistoryTable($('histSearch') ? $('histSearch').value : '');
+    } finally {
+      suppressCloudPush = false;
+    }
+  }
+
+  function startCloudSync(){
+    if(!db || cloudUnsub) return;
+    setSyncStatus('syncing', 'Connecting…');
+    db.from(CLOUD_TABLE).select('*').eq('id', CLOUD_ROW_ID).maybeSingle().then(function(res){
+      if(res.error){
+        console.error('Cloud initial load failed', res.error);
+        setSyncStatus('offline', 'Offline (using local copy)', res.error.code || res.error.message);
+        if(res.error.code === '42501' || (res.error.message||'').indexOf('policy') !== -1){
+          toast('Cloud sync blocked: Supabase RLS policy denies access. Check your table policies.');
+        } else {
+          toast('Cloud sync failed to connect: ' + (res.error.message || res.error.code));
+        }
+        return;
+      }
+      if(res.data){
+        applyCloudSnapshot(res.data);
+        setSyncStatus('synced', 'Synced');
+      } else {
+        // First time this company has signed in — seed the cloud with local data.
+        pushToCloud(true);
+      }
+      cloudUnsub = db
+        .channel('company_data_sync')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: CLOUD_TABLE, filter: 'id=eq.' + CLOUD_ROW_ID },
+          function(payload){
+            var data = payload.new;
+            if(!data) return;
+            if(data.updated_by === deviceId){ setSyncStatus('synced', 'Synced'); return; }
+            applyCloudSnapshot(data);
+            setSyncStatus('synced', 'Updated');
+            toast('Data updated from another device.');
+          }
+        )
+        .subscribe(function(status, err){
+          if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){
+            console.error('Cloud listener error', err);
+            setSyncStatus('offline', 'Offline', (err && err.message) || status);
+            toast('Cloud sync error: ' + ((err && err.message) || status));
+          }
+        });
+    });
+  }
+
+  function stopCloudSync(){
+    if(cloudUnsub){ db.removeChannel(cloudUnsub); cloudUnsub=null; }
+  }
+
+  function pushToCloud(immediate){
+    if(suppressCloudPush) return;
+    if(!db) return;
+    clearTimeout(cloudPushTimer);
+    var doPush = function(){
+      setSyncStatus('syncing', 'Saving…');
+      var payload = {
+        id: CLOUD_ROW_ID,
+        settings: settings,
+        history: history,
+        invoice: invoice,
+        updated_by: deviceId,
+        updated_at: new Date().toISOString()
+      };
+      db.from(CLOUD_TABLE).upsert(payload, {onConflict: 'id'}).then(function(res){
+        if(res.error){
+          console.error('Cloud save failed', res.error);
+          setSyncStatus('offline', 'Save failed', res.error.code || res.error.message);
+          if(res.error.code === '42501' || (res.error.message||'').indexOf('policy') !== -1){
+            toast('Save blocked: Supabase RLS policy denies write access.');
+          } else {
+            toast('Cloud save failed: ' + (res.error.message || res.error.code));
+          }
+        } else {
+          setSyncStatus('synced', 'Synced');
+        }
+      });
+    };
+    if(immediate){ doPush(); } else { cloudPushTimer = setTimeout(doPush, 900); }
+  }
+
+  function showApp(){
+    $('loginOverlay').classList.add('hidden');
+    $('appRoot').style.display = '';
+  }
+  function showLogin(){
+    stopCloudSync();
+    $('appRoot').style.display = 'none';
+    $('loginOverlay').classList.remove('hidden');
+    $('loginForm').reset();
+    $('btnLoginSubmit').disabled = false;
+    $('btnLoginSubmit').textContent = 'Sign In';
+  }
+
+  // Connect to Supabase in the background. No auth step — access is
+  // governed by the table's RLS policy. If it fails, the app still
+  // works from the local copy on this device.
+  function connectCloud(){
+    if(!db){ setSyncStatus('offline', 'Cloud unavailable'); return; }
+    startCloudSync();
+  }
+
+  var sbAvailable = initSupabaseApp();
+
+  var alreadyLoggedIn = false;
+  try{ alreadyLoggedIn = localStorage.getItem(LS_LOGGEDIN) === 'true'; }catch(e){}
+  if(alreadyLoggedIn){
+    showApp();
+    if(sbAvailable) connectCloud(); else setSyncStatus('offline','Cloud unavailable');
+  } else {
+    showLogin();
+  }
+
+  $('loginForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var user = $('loginUsername').value.trim();
+    var pass = $('loginPassword').value;
+    $('loginError').style.display = 'none';
+    $('loginStatus').textContent = '';
+    if(user === LOGIN_USERNAME && pass === LOGIN_PASSWORD){
+      try{ localStorage.setItem(LS_LOGGEDIN, 'true'); }catch(e){}
+      showApp();
+      if(sbAvailable) connectCloud(); else setSyncStatus('offline','Cloud unavailable');
+    } else {
+      $('loginError').style.display = 'block';
+      $('loginError').textContent = 'Incorrect username or password.';
+    }
+  });
+
+  $('btnLogout').addEventListener('click', function(){
+    if(confirm('Sign out?')){
+      try{ localStorage.removeItem(LS_LOGGEDIN); }catch(e){}
+      stopCloudSync();
+      showLogin();
+    }
+  });
+
+})();
 </script>
 </body>
 </html>
