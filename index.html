@@ -949,7 +949,7 @@
   function defaultInvoice(invNumber){
     var d = todayISO();
     return {
-      invNo: invNumber || 'FGT-0001',
+      invNo: invNumber || null, // not assigned until the invoice is saved
       date: d,
       validUntil: addDaysISO(d, 10),
       customer:{ name:'Customer Name', company:'', address:'', phone:'', email:'', vat:'' },
@@ -1014,11 +1014,31 @@
   enforceLockedCompany(settings);
 
   var history = loadJSON(LS_HISTORY, []);
-  var invoice = loadJSON(LS_DRAFT, null) || defaultInvoice(nextInvoiceNumber());
+  var invoice = loadJSON(LS_DRAFT, null) || defaultInvoice();
 
-  function nextInvoiceNumber(){
-    var n = (settings.startNum||1) + history.length;
-    return (settings.prefix||'FGT-') + String(n).padStart(4,'0');
+  // Collect every invoice number already in use, locally and (optionally) from
+  // a fresher cloud copy, so we never hand out a number that's taken.
+  function getUsedInvoiceNumbers(extraHistory){
+    var set = {};
+    history.forEach(function(h){ if(h.invNo) set[h.invNo]=true; });
+    if(Array.isArray(extraHistory)){
+      extraHistory.forEach(function(h){ if(h.invNo) set[h.invNo]=true; });
+    }
+    return set;
+  }
+
+  // Compute the next free number based on the highest number actually in use
+  // (not history.length), so deleted/duplicate entries can't cause collisions.
+  function computeNextInvoiceNumber(usedSet){
+    var prefix = settings.prefix || 'FGT-';
+    var maxN = (settings.startNum||1) - 1;
+    Object.keys(usedSet).forEach(function(no){
+      if(no.indexOf(prefix)===0){
+        var n = parseInt(no.slice(prefix.length),10);
+        if(!isNaN(n) && n>maxN) maxN = n;
+      }
+    });
+    return prefix + String(maxN+1).padStart(4,'0');
   }
 
   /* ============================================================
@@ -1095,8 +1115,8 @@
     if(invoice.customer.vat) custBits.push('VAT: '+invoice.customer.vat);
     setField('customer.contactLine', custBits.join('  •  ') || '—');
 
-    $('viewInvNo').textContent = invoice.invNo;
-    $('inpInvNo').value = invoice.invNo;
+    $('viewInvNo').textContent = invoice.invNo || 'Assigned on save';
+    $('inpInvNo').value = invoice.invNo || '';
     // normal calendar date (Gregorian) — the date input stays ISO, the view shows a readable format
     if(invoice.date){
       $('inpDate').value = invoice.date;
@@ -1349,9 +1369,9 @@
 
   /* invoice meta inputs */
   $('inpInvNo').addEventListener('input', function(){
-    // Invoice number is fixed (FGT-...). Revert any manual edits.
+    // Invoice number is assigned automatically on save. Revert any manual edits.
     this.value = invoice.invNo || '';
-    $('viewInvNo').textContent = this.value || '';
+    $('viewInvNo').textContent = invoice.invNo || 'Assigned on save';
   });
   $('inpDate').addEventListener('input', function(){
     if(isLocked())return;
@@ -1403,7 +1423,7 @@
     clearTimeout(autosaveTimer);
     autosaveTimer=setTimeout(function(){
       saveJSON(LS_DRAFT, invoice);
-      pushToCloud();
+      // Cloud sync intentionally does NOT happen here — only on Save Invoice.
     }, 250);
   }
 
@@ -1437,7 +1457,7 @@
   ============================================================ */
   $('btnNew').addEventListener('click', function(){
     if(confirm('Start a new invoice? Unsaved changes to the current draft will be lost.')){
-      invoice = defaultInvoice(nextInvoiceNumber());
+      invoice = defaultInvoice();
       renderAll();
       toast('New invoice started.');
     }
@@ -1446,20 +1466,43 @@
   $('btnSave').addEventListener('click', function(){
     if(isLocked()){ toast('This invoice is already saved and locked.'); return; }
     if(!confirm('Save this invoice? Once saved it can never be edited again.')) return;
-    var totals = recalc();
-    invoice.locked = true;
-    var existingIdx = history.findIndex(function(h){ return h.invNo===invoice.invNo; });
-    
-    // Prevent duplicate invoice numbers across all saved invoices
-    var isDuplicate = history.some(function(h, idx){ 
-      return h.invNo===invoice.invNo && idx!==existingIdx; 
-    });
-    if(isDuplicate){
-      toast('Error: Invoice number "'+invoice.invNo+'" already exists. Cannot save.');
-      invoice.locked = false; // revert locked state
+
+    var btn = this;
+    btn.disabled = true;
+
+    // Pull the freshest history from the cloud (if available) right before
+    // assigning a number, so two devices saving around the same time can't
+    // end up handing out the same invoice number.
+    if(db){
+      setSyncStatus('syncing', 'Checking invoice number…');
+      db.from(CLOUD_TABLE).select('history').eq('id', CLOUD_ROW_ID).maybeSingle().then(function(res){
+        var cloudHistory = (!res.error && res.data) ? res.data.history : null;
+        finalizeSaveInvoice(btn, cloudHistory);
+      }, function(){
+        finalizeSaveInvoice(btn, null);
+      });
+    } else {
+      finalizeSaveInvoice(btn, null);
+    }
+  });
+
+  function finalizeSaveInvoice(btn, cloudHistory){
+    var used = getUsedInvoiceNumbers(cloudHistory);
+    var newNo = computeNextInvoiceNumber(used);
+
+    // Forbid saving under a number that already exists anywhere (paranoia
+    // check — computeNextInvoiceNumber should already avoid this).
+    if(used[newNo]){
+      toast('Error: Could not assign a unique invoice number. Please try again.');
+      btn.disabled = false;
+      setSyncStatus('offline', 'Not synced');
       return;
     }
-    
+
+    invoice.invNo = newNo;
+    var totals = recalc();
+    invoice.locked = true;
+
     var record = {
       invNo: invoice.invNo,
       date: invoice.date,
@@ -1468,14 +1511,15 @@
       status: invoice.status || 'Draft',
       snapshot: JSON.parse(JSON.stringify(invoice))
     };
-    if(existingIdx>-1){ history[existingIdx]=record; }
-    else{ history.push(record); }
-    if(saveJSON(LS_HISTORY, history)){
+    history.push(record);
+
+    if(saveJSON(LS_HISTORY, history) && saveJSON(LS_DRAFT, invoice)){
       renderAll();
-      pushToCloud(true);
-      toast('Invoice saved and locked — it can no longer be edited.');
+      pushToCloud(true); // the only place cloud sync happens
+      toast('Invoice saved and locked as '+invoice.invNo+' — it can no longer be edited.');
     }
-  });
+    btn.disabled = false;
+  }
 
   $('btnPrint').addEventListener('click', function(){
     // Auto-save a snapshot to local history before printing (does not lock)
@@ -1493,15 +1537,7 @@
       if(existingIdx>-1){ history[existingIdx]=record; } else { history.push(record); }
       saveJSON(LS_HISTORY, history);
       toast('Saved local copy before printing.');
-
-      // Attempt cloud save if Supabase is configured; wait up to 1.5s for it, then print
-      try{
-        if(db){ pushToCloud(true); }
-        var timeout = new Promise(function(res){ setTimeout(res, 1500); });
-        Promise.race([Promise.resolve(null), timeout]).finally(function(){ window.print(); });
-        return;
-      }catch(e){ console.error('Cloud save attempt failed', e); }
-
+      // Cloud sync intentionally does NOT happen here — only on Save Invoice.
     }catch(err){ console.error('Auto-save before print failed', err); }
     window.print();
   });
@@ -1644,7 +1680,7 @@
     enforceLockedCompany(settings);
     saveJSON(LS_SETTINGS, settings);
     renderAll();
-    pushToCloud(true);
+    // Cloud sync intentionally does NOT happen here — only on Save Invoice.
     closeModal('settingsOverlay');
     toast('Settings saved.');
   });
@@ -1656,7 +1692,7 @@
       saveJSON(LS_SETTINGS, settings);
       populateSettingsForm();
       renderAll();
-      pushToCloud(true);
+      // Cloud sync intentionally does NOT happen here — only on Save Invoice.
       toast('Settings reset to default.');
     }
   });
@@ -1715,7 +1751,7 @@
         var rec=history.find(function(h){return h.invNo===b.getAttribute('data-dup');});
         if(rec){
           var copy=JSON.parse(JSON.stringify(rec.snapshot));
-          copy.invNo = nextInvoiceNumber();
+          copy.invNo = null; // a new number is only assigned when this draft is saved
           copy.date = todayISO();
           copy.validUntil = addDaysISO(copy.date, 10);
           copy.status='Draft';
@@ -1723,7 +1759,7 @@
           invoice=copy;
           renderAll();
           closeModal('historyOverlay');
-          toast('Invoice duplicated as '+copy.invNo+'.');
+          toast('Invoice duplicated as a new draft.');
         }
       });
     });
@@ -1733,7 +1769,7 @@
         if(confirm('Are you sure you want to delete invoice '+no+'?')){
           history=history.filter(function(h){return h.invNo!==no;});
           saveJSON(LS_HISTORY, history);
-          pushToCloud(true);
+          // Cloud sync intentionally does NOT happen here — only on Save Invoice.
           renderHistoryTable($('histSearch').value);
           toast('Invoice deleted.');
         }
@@ -1742,7 +1778,8 @@
     wrap.querySelectorAll('.status-select').forEach(function(sel){
       sel.addEventListener('change', function(){
         var rec=history.find(function(h){return h.invNo===sel.getAttribute('data-invno');});
-        if(rec){ rec.status=sel.value; saveJSON(LS_HISTORY, history); pushToCloud(true); }
+        if(rec){ rec.status=sel.value; saveJSON(LS_HISTORY, history); }
+        // Cloud sync intentionally does NOT happen here — only on Save Invoice.
       });
     });
   }
@@ -1780,7 +1817,7 @@
         saveJSON(LS_HISTORY, history);
         renderAll();
         renderHistoryTable();
-        pushToCloud(true);
+        // Cloud sync intentionally does NOT happen here — only on Save Invoice.
         toast('Data imported successfully.');
       }catch(err){
         console.error(err);
@@ -1880,10 +1917,10 @@
         history = data.history;
         saveJSON(LS_HISTORY, history);
       }
-      if(data.invoice && !isLocked()){
-        invoice = data.invoice;
-        saveJSON(LS_DRAFT, invoice);
-      }
+      // NOTE: the in-progress draft (data.invoice) is intentionally NOT applied
+      // here. Sync only happens when a device clicks Save Invoice, so another
+      // device's incoming update must never overwrite this device's own
+      // unsaved draft. Each device's current draft stays local until saved.
       renderAll();
       renderHistoryTable($('histSearch') ? $('histSearch').value : '');
     } finally {
@@ -1922,7 +1959,7 @@
             if(data.updated_by === deviceId){ setSyncStatus('synced', 'Synced'); return; }
             applyCloudSnapshot(data);
             setSyncStatus('synced', 'Updated');
-            toast('Data updated from another device.');
+            // No toast notification here — the sync status pill is enough.
           }
         )
         .subscribe(function(status, err){
