@@ -1769,7 +1769,7 @@
         if(confirm('Are you sure you want to delete invoice '+no+'?')){
           history=history.filter(function(h){return h.invNo!==no;});
           saveJSON(LS_HISTORY, history);
-          // Cloud sync intentionally does NOT happen here — only on Save Invoice.
+          pushToCloud(true);
           renderHistoryTable($('histSearch').value);
           toast('Invoice deleted.');
         }
@@ -1778,8 +1778,7 @@
     wrap.querySelectorAll('.status-select').forEach(function(sel){
       sel.addEventListener('change', function(){
         var rec=history.find(function(h){return h.invNo===sel.getAttribute('data-invno');});
-        if(rec){ rec.status=sel.value; saveJSON(LS_HISTORY, history); }
-        // Cloud sync intentionally does NOT happen here — only on Save Invoice.
+        if(rec){ rec.status=sel.value; saveJSON(LS_HISTORY, history); pushToCloud(true); }
       });
     });
   }
