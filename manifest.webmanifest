@@ -1,0 +1,13 @@
+{
+  "name": "Proforma Studio",
+  "short_name": "Proforma",
+  "description": "Proforma invoices for Feysel General Trading",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f1ea",
+  "theme_color": "#1c2430",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
